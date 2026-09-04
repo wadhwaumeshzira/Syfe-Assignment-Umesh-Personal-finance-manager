@@ -193,10 +193,13 @@ api_test() {
         curl_cmd+=(-H "Content-Type: application/json" -d "$data")
     fi
 
-    # Add cookie/token handling
+    # Add cookie handling
     if [ -n "$cookie_file" ] && [ -f "$cookie_file" ]; then
-        local token=$(cat "$cookie_file")
-        curl_cmd+=(-H "Authorization: Bearer $token")
+        curl_cmd+=(-b "$cookie_file")
+    fi
+
+    if [ -n "$save_cookies" ]; then
+        curl_cmd+=(-c "$save_cookies")
     fi
 
     # Add endpoint URL
@@ -206,23 +209,6 @@ api_test() {
     local full_response
     full_response=$("${curl_cmd[@]}" 2>/dev/null)
     local curl_exit_code=$?
-
-    # Extract status code (last 3 characters) and response body
-    local actual_status="${full_response: -3}"
-    local response_body="${full_response%???}"
-
-    # Extract JWT token if this is a login request and we need to save it
-    if [ -n "$save_cookies" ] && [ "$actual_status" -ge 200 ] && [ "$actual_status" -lt 300 ] && [[ "$endpoint" == *"/login"* ]]; then
-        local jwt_token=$(echo "$response_body" | grep -o '"token"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/"token"[[:space:]]*:[[:space:]]*"//' | tr -d '"')
-        if [ -n "$jwt_token" ]; then
-            echo "$jwt_token" > "$save_cookies"
-        fi
-    fi
-
-    # Clear token if logout
-    if [[ "$endpoint" == *"/logout"* ]] && [ -n "$cookie_file" ]; then
-        echo "" > "$cookie_file"
-    fi
 
     # Check if curl command succeeded
     if [ $curl_exit_code -ne 0 ]; then
