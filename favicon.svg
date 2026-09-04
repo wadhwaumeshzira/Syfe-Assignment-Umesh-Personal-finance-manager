@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="120" fill="#13131a"/>
+  <!-- Chart bars matching the FinTrack UI colors -->
+  <path d="M128 384 L128 256 L208 256 L208 384 Z" fill="#7c6af7"/>
+  <path d="M228 384 L228 176 L308 176 L308 384 Z" fill="#4ecca3"/>
+  <path d="M328 384 L328 96 L408 96 L408 384 Z" fill="#7c6af7"/>
+</svg>

@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FinTrack — Personal Finance Manager</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: #2a2a3a;
+    --accent: #7c6af7;
+    --accent2: #4ecca3;
+    --danger: #ff6b6b;
+    --income: #4ecca3;
+    --expense: #ff6b6b;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  /* AUTH */
+  #auth-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 20% 50%, #1a1040 0%, var(--bg) 60%),
+                radial-gradient(ellipse at 80% 20%, #0d2a2a 0%, transparent 50%);
+  }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 48px; width: 100%; max-width: 440px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+  .auth-logo { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .auth-logo span { color: var(--accent); }
+  .auth-sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .auth-tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 10px; padding: 4px; margin-bottom: 28px; }
+  .auth-tab {
+    flex: 1; padding: 10px; border: none; background: transparent; color: var(--muted);
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px; border-radius: 8px; cursor: pointer; transition: all .2s;
+  }
+  .auth-tab.active { background: var(--accent); color: #fff; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border .2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--surface2); }
+  .btn {
+    width: 100%; padding: 14px; border: none; border-radius: 10px; font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 15px; cursor: pointer; transition: all .2s; letter-spacing: 0.5px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #9580ff; transform: translateY(-1px); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm {
+    width: auto; padding: 7px 14px; font-size: 13px; border-radius: 8px;
+  }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .error-msg { color: var(--danger); font-size: 13px; margin-top: 10px; text-align: center; }
+  .success-msg { color: var(--income); font-size: 13px; margin-top: 10px; text-align: center; }
+
+  /* APP LAYOUT */
+  #app-screen { display: none; min-height: 100vh; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+    background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 28px 16px; z-index: 100;
+  }
+  .sidebar-logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; padding: 0 8px; margin-bottom: 36px; }
+  .sidebar-logo span { color: var(--accent); }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px;
+    color: var(--muted); font-weight: 500; font-size: 14px; cursor: pointer; transition: all .2s; margin-bottom: 4px;
+    border: none; background: transparent; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(124,106,247,0.15); color: var(--accent); }
+  .nav-icon { font-size: 18px; width: 22px; text-align: center; }
+  .sidebar-bottom { margin-top: auto; }
+  .user-chip {
+    display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+    background: var(--surface2); border-radius: 10px; font-size: 13px;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; font-family: 'Syne', sans-serif;
+  }
+  .logout-btn {
+    margin-top: 8px; width: 100%; padding: 10px; border: none; background: transparent;
+    color: var(--muted); font-size: 13px; cursor: pointer; border-radius: 8px; transition: all .2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .logout-btn:hover { background: rgba(255,107,107,0.1); color: var(--danger); }
+
+  .main { margin-left: 240px; padding: 40px; min-height: 100vh; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-title { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+  .page-sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+
+  /* CARDS */
+  .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+  }
+  .card-label { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .card-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+  .card-value.income { color: var(--income); }
+  .card-value.expense { color: var(--expense); }
+  .card-value.balance { color: var(--accent); }
+
+  /* TABLE */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 14px 20px; text-align: left; font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid var(--border); font-family: 'Syne', sans-serif; }
+  td { padding: 14px 20px; font-size: 14px; border-bottom: 1px solid rgba(42,42,58,0.5); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(124,106,247,0.04); }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .badge-income { background: rgba(78,204,163,0.15); color: var(--income); }
+  .badge-expense { background: rgba(255,107,107,0.15); color: var(--expense); }
+  .amount-income { color: var(--income); font-weight: 600; font-family: 'Syne', sans-serif; }
+  .amount-expense { color: var(--expense); font-weight: 600; font-family: 'Syne', sans-serif; }
+  .empty-state { padding: 48px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; z-index: 200; display: none;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 36px; width: 100%; max-width: 460px; animation: slideUp .2s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 24px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions .btn { flex: 1; }
+
+  /* FILTERS */
+  .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filters select, .filters input {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+  }
+  .filters select:focus, .filters input:focus { border-color: var(--accent); }
+
+  /* GOALS */
+  .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .goal-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+  }
+  .goal-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .goal-target { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .progress-bar { background: var(--surface2); border-radius: 20px; height: 8px; margin-bottom: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .5s ease; }
+  .goal-stats { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+  .goal-stats span { color: var(--text); font-weight: 500; }
+
+  /* REPORTS */
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .cat-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .cat-bar-wrap { flex: 1; background: var(--surface2); border-radius: 20px; height: 6px; overflow: hidden; }
+  .cat-bar { height: 100%; border-radius: 20px; }
+  .cat-name { width: 130px; font-size: 13px; }
+  .cat-amount { width: 90px; text-align: right; font-size: 13px; font-family: 'Syne', sans-serif; }
+
+  /* CATEGORIES */
+  .categories-list { display: flex; flex-wrap: wrap; gap: 10px; }
+  .cat-chip {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 13px;
+  }
+  .cat-chip-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; transition: color .2s; }
+  .cat-chip-del:hover { color: var(--danger); }
+
+  .loading { color: var(--muted); font-size: 14px; padding: 24px; text-align: center; }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; padding: 16px 8px; }
+    .sidebar-logo, .nav-item span, .user-chip > *:not(.user-avatar), .logout-btn { display: none; }
+    .main { margin-left: 60px; padding: 20px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .report-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Fin<span>Track</span></div>
+    <div class="auth-sub">Your personal finance companion</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+      <button class="auth-tab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+      <div id="login-msg"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Umesh Wadhwa"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="text" id="reg-phone" placeholder="+91 98765 43210"/>
+      </div>
+      <div class="form-group">
+        <label>Password (min 6 chars)</label>
+        <input type="password" id="reg-password" placeholder="••••••••"/>
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">Create Account</button>
+      <div id="register-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <div class="sidebar">
+    <div class="sidebar-logo">Fin<span>Track</span></div>
+    <button class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="showPage('transactions')">
+      <span class="nav-icon">💳</span><span>Transactions</span>
+    </button>
+    <button class="nav-item" onclick="showPage('goals')">
+      <span class="nav-icon">🎯</span><span>Goals</span>
+    </button>
+    <button class="nav-item" onclick="showPage('reports')">
+      <span class="nav-icon">📈</span><span>Reports</span>
+    </button>
+    <button class="nav-item" onclick="showPage('categories')">
+      <span class="nav-icon">🏷️</span><span>Categories</span>
+    </button>
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div style="font-size:13px;font-weight:500;" id="user-name-display">User</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">⬅ Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Your financial overview</div>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-label">Total Income</div>
+          <div class="card-value income" id="dash-income">₹0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Total Expenses</div>
+          <div class="card-value expense" id="dash-expense">₹0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Net Balance</div>
+          <div class="card-value balance" id="dash-balance">₹0</div>
+        </div>
+      </div>
+      <div class="section-header">
+        <div class="section-title">Recent Transactions</div>
+        <button class="btn btn-outline btn-sm" onclick="showPage('transactions')">View All</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+          <tbody id="dash-txn-list"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="page" id="page-transactions">
+      <div class="page-title">Transactions</div>
+      <div class="page-sub">Track your income and expenses</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+        <button class="btn btn-primary btn-sm" onclick="openModal('txn-modal')">+ Add Transaction</button>
+      </div>
+      <div class="filters">
+        <select id="filter-type" onchange="loadTransactions()">
+          <option value="">All Types</option>
+          <option value="INCOME">Income</option>
+          <option value="EXPENSE">Expense</option>
+        </select>
+        <input type="date" id="filter-start" onchange="loadTransactions()" placeholder="Start date"/>
+        <input type="date" id="filter-end" onchange="loadTransactions()" placeholder="End date"/>
+        <select id="filter-cat" onchange="loadTransactions()">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead>
+          <tbody id="txn-list"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="page" id="page-goals">
+      <div class="page-title">Savings Goals</div>
+      <div class="page-sub">Set and track your financial goals</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+        <button class="btn btn-primary btn-sm" onclick="openModal('goal-modal')">+ New Goal</button>
+      </div>
+      <div class="goals-grid" id="goals-list"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="page-reports">
+      <div class="page-title">Reports</div>
+      <div class="page-sub">Financial analytics and insights</div>
+      <div class="filters" style="margin-bottom:24px;">
+        <select id="report-type" onchange="loadReport()">
+          <option value="monthly">Monthly Report</option>
+          <option value="yearly">Yearly Report</option>
+        </select>
+        <select id="report-year" onchange="loadReport()"></select>
+        <select id="report-month" onchange="loadReport()">
+          <option value="1">January</option><option value="2">February</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+      <div class="report-grid">
+        <div class="card">
+          <div class="card-label">Total Income</div>
+          <div class="card-value income" id="rep-income">₹0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Total Expenses</div>
+          <div class="card-value expense" id="rep-expense">₹0</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-title" style="margin-bottom:16px;">Expense Breakdown</div>
+        <div id="rep-categories"><div class="empty-state">No data</div></div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="page" id="page-categories">
+      <div class="page-title">Categories</div>
+      <div class="page-sub">Manage your transaction categories</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+        <button class="btn btn-primary btn-sm" onclick="openModal('cat-modal')">+ Add Category</button>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-title" style="margin-bottom:16px;">Income Categories</div>
+        <div class="categories-list" id="income-cats"></div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-bottom:16px;">Expense Categories</div>
+        <div class="categories-list" id="expense-cats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSACTION MODAL -->
+<div class="modal-overlay" id="txn-modal">
+  <div class="modal">
+    <div class="modal-title">Add Transaction</div>
+    <div class="form-group">
+      <label>Amount (₹)</label>
+      <input type="number" id="txn-amount" placeholder="0.00" step="0.01"/>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="txn-date"/>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="txn-category"><option value="">Select category...</option></select>
+    </div>
+    <div class="form-group">
+      <label>Description (optional)</label>
+      <input type="text" id="txn-desc" placeholder="What was this for?"/>
+    </div>
+    <div id="txn-msg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('txn-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createTransaction()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-overlay" id="goal-modal">
+  <div class="modal">
+    <div class="modal-title">New Savings Goal</div>
+    <div class="form-group">
+      <label>Goal Name</label>
+      <input type="text" id="goal-name" placeholder="e.g. New Laptop"/>
+    </div>
+    <div class="form-group">
+      <label>Target Amount (₹)</label>
+      <input type="number" id="goal-amount" placeholder="0.00" step="0.01"/>
+    </div>
+    <div class="form-group">
+      <label>Start Date</label>
+      <input type="date" id="goal-start"/>
+    </div>
+    <div class="form-group">
+      <label>Target Date</label>
+      <input type="date" id="goal-target"/>
+    </div>
+    <div id="goal-msg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('goal-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createGoal()">Create Goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY MODAL -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal">
+    <div class="modal-title">Add Category</div>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="cat-name" placeholder="e.g. Freelance"/>
+    </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="cat-type">
+        <option value="INCOME">Income</option>
+        <option value="EXPENSE">Expense</option>
+      </select>
+    </div>
+    <div id="cat-msg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('cat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCategory()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://personal-finance-manager-n7lx.onrender.com';
+let currentUser = null;
+let allCategories = [];
+
+// ── UTILS ──────────────────────────────────────────────
+function fmt(n) { return '₹' + Number(n||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function showMsg(id, msg, isError=true) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = isError ? 'error-msg' : 'success-msg';
+}
+
+// ── AUTH ───────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('login-form').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? 'block' : 'none';
+}
+
+const originalFetch = window.fetch;
+window.fetch = async function(url, options = {}) {
+  const token = localStorage.getItem('token');
+  if (token && url.startsWith(API) && !url.includes('/api/auth/register') && !url.includes('/api/auth/login')) {
+    options.headers = options.headers || {};
+    options.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return originalFetch(url, options);
+};
+
+async function doLogin() {
+  const username = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!username || !password) return showMsg('login-msg','Please fill all fields');
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (res.ok) { 
+      localStorage.setItem('token', data.token);
+      currentUser = username; 
+      enterApp(); 
+    }
+    else showMsg('login-msg', data.message || 'Login failed');
+  } catch(e) { showMsg('login-msg','Connection error. Try again.'); }
+}
+
+async function doRegister() {
+  const fullName = document.getElementById('reg-name').value.trim();
+  const username = document.getElementById('reg-email').value.trim();
+  const phoneNumber = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!fullName||!username||!phoneNumber||!password) return showMsg('register-msg','Please fill all fields');
+  try {
+    const res = await fetch(`${API}/api/auth/register`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({fullName, username, phoneNumber, password})
+    });
+    const data = await res.json();
+    if (res.ok) { showMsg('register-msg','Account created! Please login.', false); switchTab('login'); }
+    else showMsg('register-msg', data.message || 'Registration failed');
+  } catch(e) { showMsg('register-msg','Connection error. Try again.'); }
+}
+
+function doLogout() {
+  localStorage.removeItem('token');
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display = 'none';
+}
+
+function enterApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  const initial = (currentUser||'U')[0].toUpperCase();
+  document.getElementById('user-avatar').textContent = initial;
+  document.getElementById('user-name-display').textContent = currentUser.split('@')[0];
+  // Set defaults
+  document.getElementById('txn-date').value = today();
+  document.getElementById('goal-start').value = today();
+  const yr = new Date().getFullYear();
+  const yearSel = document.getElementById('report-year');
+  for (let y = yr; y >= yr-3; y--) { const o=document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o); }
+  document.getElementById('report-month').value = new Date().getMonth()+1;
+  loadCategories();
+  loadDashboard();
+}
+
+// ── NAVIGATION ─────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name==='dashboard') loadDashboard();
+  if (name==='transactions') loadTransactions();
+  if (name==='goals') loadGoals();
+  if (name==='reports') loadReport();
+  if (name==='categories') loadCategories();
+}
+
+// ── MODALS ─────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+// ── CATEGORIES ─────────────────────────────────────────
+async function loadCategories() {
+  try {
+    const res = await fetch(`${API}/api/categories`, {credentials:'include'});
+    if (!res.ok) return;
+    const data = await res.json();
+    allCategories = data.categories || [];
+    renderCategories();
+    populateCategorySelects();
+  } catch(e) {}
+}
+
+function renderCategories() {
+  const income = allCategories.filter(c => c.type==='INCOME');
+  const expense = allCategories.filter(c => c.type==='EXPENSE');
+  document.getElementById('income-cats').innerHTML = income.map(c => `
+    <div class="cat-chip">
+      <span class="badge badge-income">${c.name}</span>
+      ${c.custom ? `<button class="cat-chip-del" onclick="deleteCategory('${c.name}')">×</button>` : ''}
+    </div>`).join('') || '<span style="color:var(--muted);font-size:13px">None</span>';
+  document.getElementById('expense-cats').innerHTML = expense.map(c => `
+    <div class="cat-chip">
+      <span class="badge badge-expense">${c.name}</span>
+      ${c.custom ? `<button class="cat-chip-del" onclick="deleteCategory('${c.name}')">×</button>` : ''}
+    </div>`).join('') || '<span style="color:var(--muted);font-size:13px">None</span>';
+}
+
+function populateCategorySelects() {
+  const txnSel = document.getElementById('txn-category');
+  const filterSel = document.getElementById('filter-cat');
+  txnSel.innerHTML = '<option value="">Select category...</option>';
+  filterSel.innerHTML = '<option value="">All Categories</option>';
+  allCategories.forEach(c => {
+    txnSel.innerHTML += `<option value="${c.name}">${c.name} (${c.type})</option>`;
+    filterSel.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+  });
+}
+
+async function createCategory() {
+  const name = document.getElementById('cat-name').value.trim();
+  const type = document.getElementById('cat-type').value;
+  if (!name) return showMsg('cat-msg','Name is required');
+  try {
+    const res = await fetch(`${API}/api/categories`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, type})
+    });
+    const data = await res.json();
+    if (res.ok) { closeModal('cat-modal'); document.getElementById('cat-name').value=''; loadCategories(); }
+    else showMsg('cat-msg', data.message||'Failed');
+  } catch(e) { showMsg('cat-msg','Error'); }
+}
+
+async function deleteCategory(name) {
+  if (!confirm(`Delete category "${name}"?`)) return;
+  await fetch(`${API}/api/categories/${encodeURIComponent(name)}`, {method:'DELETE', credentials:'include'});
+  loadCategories();
+}
+
+// ── TRANSACTIONS ───────────────────────────────────────
+async function loadTransactions() {
+  const type = document.getElementById('filter-type')?.value || '';
+  const start = document.getElementById('filter-start')?.value || '';
+  const end = document.getElementById('filter-end')?.value || '';
+  const cat = document.getElementById('filter-cat')?.value || '';
+  let url = `${API}/api/transactions?`;
+  if (type) url += `type=${type}&`;
+  if (start) url += `startDate=${start}&`;
+  if (end) url += `endDate=${end}&`;
+  if (cat) url += `category=${encodeURIComponent(cat)}&`;
+  try {
+    const res = await fetch(url, {credentials:'include'});
+    const data = await res.json();
+    const txns = data.transactions || [];
+    const tbody = document.getElementById('txn-list');
+    if (!txns.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No transactions found</td></tr>'; return; }
+    tbody.innerHTML = txns.map(t => `
+      <tr>
+        <td>${t.date}</td>
+        <td><span class="badge badge-${t.type?.toLowerCase()||'expense'}">${t.category}</span></td>
+        <td style="color:var(--muted)">${t.description||'—'}</td>
+        <td class="amount-${t.type?.toLowerCase()||'expense'}">${t.type==='INCOME'?'+':'−'}${fmt(t.amount)}</td>
+        <td><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="deleteTransaction(${t.id})">Delete</button></td>
+      </tr>`).join('');
+  } catch(e) { document.getElementById('txn-list').innerHTML = '<tr><td colspan="5" class="empty-state">Error loading</td></tr>'; }
+}
+
+async function createTransaction() {
+  const amount = document.getElementById('txn-amount').value;
+  const date = document.getElementById('txn-date').value;
+  const category = document.getElementById('txn-category').value;
+  const description = document.getElementById('txn-desc').value.trim();
+  if (!amount||!date||!category) return showMsg('txn-msg','Please fill required fields');
+  try {
+    const res = await fetch(`${API}/api/transactions`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({amount:parseFloat(amount), date, category, description})
+    });
+    const data = await res.json();
+    if (res.ok) {
+      closeModal('txn-modal');
+      document.getElementById('txn-amount').value='';
+      document.getElementById('txn-desc').value='';
+      loadTransactions(); loadDashboard();
+    } else showMsg('txn-msg', data.message||'Failed');
+  } catch(e) { showMsg('txn-msg','Error'); }
+}
+
+async function deleteTransaction(id) {
+  if (!confirm('Delete this transaction?')) return;
+  await fetch(`${API}/api/transactions/${id}`, {method:'DELETE', credentials:'include'});
+  loadTransactions(); loadDashboard();
+}
+
+// ── DASHBOARD ──────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const res = await fetch(`${API}/api/transactions`, {credentials:'include'});
+    const data = await res.json();
+    const txns = data.transactions || [];
+    let income=0, expense=0;
+    txns.forEach(t => { if(t.type==='INCOME') income+=Number(t.amount); else expense+=Number(t.amount); });
+    document.getElementById('dash-income').textContent = fmt(income);
+    document.getElementById('dash-expense').textContent = fmt(expense);
+    document.getElementById('dash-balance').textContent = fmt(income-expense);
+    const recent = txns.slice(0,5);
+    const tbody = document.getElementById('dash-txn-list');
+    if (!recent.length) { tbody.innerHTML='<tr><td colspan="4" class="empty-state">No transactions yet</td></tr>'; return; }
+    tbody.innerHTML = recent.map(t => `
+      <tr>
+        <td>${t.date}</td>
+        <td><span class="badge badge-${t.type?.toLowerCase()||'expense'}">${t.category}</span></td>
+        <td style="color:var(--muted)">${t.description||'—'}</td>
+        <td class="amount-${t.type?.toLowerCase()||'expense'}">${t.type==='INCOME'?'+':'−'}${fmt(t.amount)}</td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+// ── GOALS ──────────────────────────────────────────────
+async function loadGoals() {
+  try {
+    const res = await fetch(`${API}/api/goals`, {credentials:'include'});
+    const data = await res.json();
+    const goals = data.goals || [];
+    const container = document.getElementById('goals-list');
+    if (!goals.length) { container.innerHTML='<div class="empty-state">No goals yet. Create one!</div>'; return; }
+    container.innerHTML = goals.map(g => `
+      <div class="goal-card">
+        <div class="goal-name">${g.goalName}</div>
+        <div class="goal-target">Target: ${fmt(g.targetAmount)} · Due: ${g.targetDate}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(g.progressPercentage||0,100)}%"></div></div>
+        <div class="goal-stats">
+          <div>Saved <span>${fmt(g.currentProgress)}</span></div>
+          <div><span>${(g.progressPercentage||0).toFixed(1)}%</span></div>
+          <div>Left <span>${fmt(g.remainingAmount)}</span></div>
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="deleteGoal(${g.id})">Delete</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { document.getElementById('goals-list').innerHTML='<div class="empty-state">Error loading goals</div>'; }
+}
+
+async function createGoal() {
+  const goalName = document.getElementById('goal-name').value.trim();
+  const targetAmount = document.getElementById('goal-amount').value;
+  const startDate = document.getElementById('goal-start').value;
+  const targetDate = document.getElementById('goal-target').value;
+  if (!goalName||!targetAmount||!targetDate) return showMsg('goal-msg','Please fill required fields');
+  try {
+    const res = await fetch(`${API}/api/goals`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({goalName, targetAmount:parseFloat(targetAmount), startDate, targetDate})
+    });
+    const data = await res.json();
+    if (res.ok) { closeModal('goal-modal'); document.getElementById('goal-name').value=''; document.getElementById('goal-amount').value=''; document.getElementById('goal-target').value=''; loadGoals(); }
+    else showMsg('goal-msg', data.message||'Failed');
+  } catch(e) { showMsg('goal-msg','Error'); }
+}
+
+async function deleteGoal(id) {
+  if (!confirm('Delete this goal?')) return;
+  await fetch(`${API}/api/goals/${id}`, {method:'DELETE', credentials:'include'});
+  loadGoals();
+}
+
+// ── REPORTS ────────────────────────────────────────────
+async function loadReport() {
+  const type = document.getElementById('report-type').value;
+  const year = document.getElementById('report-year').value;
+  const month = document.getElementById('report-month').value;
+  document.getElementById('report-month').style.display = type==='monthly' ? 'inline-block' : 'none';
+  let url = type==='monthly' ? `${API}/api/reports/monthly/${year}/${month}` : `${API}/api/reports/yearly/${year}`;
+  try {
+    const res = await fetch(url, {credentials:'include'});
+    const data = await res.json();
+    document.getElementById('rep-income').textContent = fmt(data.totalIncome||0);
+    document.getElementById('rep-expense').textContent = fmt(data.totalExpenses||0);
+    const cats = data.expenseByCategory || {};
+    const total = Object.values(cats).reduce((a,b)=>a+Number(b),0);
+    const container = document.getElementById('rep-categories');
+    if (!Object.keys(cats).length) { container.innerHTML='<div class="empty-state">No expense data</div>'; return; }
+    const colors = ['#7c6af7','#4ecca3','#ff6b6b','#f7c76a','#6af7c7','#f76a7c','#6a7cf7'];
+    container.innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([name,amt],i) => `
+      <div class="cat-row">
+        <div class="cat-name" style="font-size:13px">${name}</div>
+        <div class="cat-bar-wrap"><div class="cat-bar" style="width:${total?((amt/total)*100):0}%;background:${colors[i%colors.length]}"></div></div>
+        <div class="cat-amount" style="color:${colors[i%colors.length]}">${fmt(amt)}</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
