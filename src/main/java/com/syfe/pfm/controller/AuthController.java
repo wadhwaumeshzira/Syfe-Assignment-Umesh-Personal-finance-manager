@@ -63,12 +63,21 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, 
+                                   jakarta.servlet.http.HttpServletRequest httpRequest, 
+                                   jakarta.servlet.http.HttpServletResponse httpResponse) {
         // Authenticate credentials
         UsernamePasswordAuthenticationToken authToken = 
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
         
         Authentication authentication = authenticationManager.authenticate(authToken);
+        
+        // Save to Security Context for Session Cookies
+        org.springframework.security.core.context.SecurityContext context = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+        org.springframework.security.web.context.HttpSessionSecurityContextRepository securityContextRepository = new org.springframework.security.web.context.HttpSessionSecurityContextRepository();
+        securityContextRepository.saveContext(context, httpRequest, httpResponse);
         
         String jwt = tokenProvider.generateToken(authentication);
 
